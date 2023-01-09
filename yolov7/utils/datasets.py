@@ -607,6 +607,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         for i, (im_file, lb_file) in enumerate(pbar):
             try:
                 # verify images
+                im_file = "/opt/ml/data/" + im_file
+                lb_file = "/opt/ml/data/" + lb_file
                 im = Image.open(im_file)
                 im.verify()  # PIL verify
                 shape = exif_size(im)  # image size

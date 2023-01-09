@@ -23,7 +23,9 @@ def attempt_download(file, repo="WongKinYiu/yolov7"):
     if not file.exists():
         try:
             response = requests.get(
-                f"https://api.github.com/repos/{repo}/releases/latest"
+                # f"https://api.github.com/repos/{repo}/releases/latest"
+                f"https://api.github.com/repos/{repo}/releases/71389134"
+                # https://api.github.com/repos/WongKinYiu/yolov7/releases/assets/70831688
             ).json()  # github api
             assets = [x["name"] for x in response["assets"]]  # release assets
             tag = response["tag_name"]  # i.e. 'v1.0'

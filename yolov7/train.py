@@ -765,15 +765,18 @@ def train(hyp, opt, device, tb_writer=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--weights", type=str, default="yolo7.pt", help="initial weights path"
+        "--weights", type=str, default="yolov7-tiny.pt", help="initial weights path"
     )
     parser.add_argument(
-        "--cfg", type=str, default="cfg/training/yolov7.yaml", help="model.yaml path"
+        "--cfg",
+        type=str,
+        default="cfg/training/yolov7-tiny.yaml",
+        help="model.yaml path",
     )
     parser.add_argument(
         "--data",
         type=str,
-        default="../data/train/4th_run_124.yaml",
+        default="../../data/dataset/4th_run_124.yaml",
         help="data.yaml path",
     )
     parser.add_argument(
