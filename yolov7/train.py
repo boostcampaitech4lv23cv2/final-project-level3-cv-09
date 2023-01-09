@@ -771,7 +771,10 @@ if __name__ == "__main__":
         "--cfg", type=str, default="cfg/training/yolov7.yaml", help="model.yaml path"
     )
     parser.add_argument(
-        "--data", type=str, default="data/coco.yaml", help="data.yaml path"
+        "--data",
+        type=str,
+        default="../data/train/4th_run_124.yaml",
+        help="data.yaml path",
     )
     parser.add_argument(
         "--hyp",
@@ -843,7 +846,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--project", default="findersai/train", help="save to project/name"
     )
-    parser.add_argument("--entity", default="Project09", help="W&B entity")
+    parser.add_argument("--entity", default="project09", help="W&B entity")
     parser.add_argument("--name", default="exp", help="save to project/name")
     parser.add_argument(
         "--exist-ok",
