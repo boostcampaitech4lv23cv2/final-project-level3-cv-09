@@ -57,11 +57,11 @@ from utils.torch_utils import (
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 import wandb
 
-wandb.init(
-    project="YOLOv7",
-    entity="project09",
-    name="test",
-)
+# wandb.init(
+#     project="YOLOv7",
+#     entity="project09",
+#     name="test",
+# )
 logger = logging.getLogger(__name__)
 
 
@@ -788,18 +788,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--hyp",
         type=str,
-        default="data/hyp.scratch.tiny.yaml",
+        default="data/hyp.scratch.custom.yaml",
         help="hyperparameters path",
     )
-    parser.add_argument("--epochs", type=int, default=300)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument(
-        "--batch-size", type=int, default=16, help="total batch size for all GPUs"
+        "--batch-size", type=int, default=64, help="total batch size for all GPUs"
     )
     parser.add_argument(
         "--img-size",
         nargs="+",
         type=int,
-        default=[640, 640],
+        default=[1280, 1280],
         help="[train, test] image sizes",
     )
     parser.add_argument("--rect", action="store_true", help="rectangular training")
