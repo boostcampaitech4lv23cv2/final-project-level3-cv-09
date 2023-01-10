@@ -763,27 +763,38 @@ def train(hyp, opt, device, tb_writer=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--weights", type=str, default="yolo7.pt", help="initial weights path"
+        "--weights",
+        type=str,
+        default="weight/yolov7-e6_training.pt",
+        help="initial weights path",
     )
-    parser.add_argument("--cfg", type=str, default="", help="model.yaml path")
     parser.add_argument(
-        "--data", type=str, default="data/coco.yaml", help="data.yaml path"
+        "--cfg",
+        type=str,
+        default="cfg/training/yolov7-e6.yaml",
+        help="model.yaml path",
+    )
+    parser.add_argument(
+        "--data",
+        type=str,
+        default="../../data/dataset/4th_run_124.yaml",
+        help="data.yaml path",
     )
     parser.add_argument(
         "--hyp",
         type=str,
-        default="data/hyp.scratch.p5.yaml",
+        default="data/hyp.scratch.custom.yaml",
         help="hyperparameters path",
     )
-    parser.add_argument("--epochs", type=int, default=300)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument(
-        "--batch-size", type=int, default=16, help="total batch size for all GPUs"
+        "--batch-size", type=int, default=8, help="total batch size for all GPUs"
     )
     parser.add_argument(
         "--img-size",
         nargs="+",
         type=int,
-        default=[640, 640],
+        default=[1280, 1280],
         help="[train, test] image sizes",
     )
     parser.add_argument("--rect", action="store_true", help="rectangular training")
@@ -812,7 +823,7 @@ if __name__ == "__main__":
         help="use weighted image selection for training",
     )
     parser.add_argument(
-        "--device", default="", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
+        "--device", default="0", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
     )
     parser.add_argument(
         "--multi-scale", action="store_true", help="vary img-size +/- 50%%"
@@ -836,9 +847,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--workers", type=int, default=8, help="maximum number of dataloader workers"
     )
-    parser.add_argument("--project", default="runs/train", help="save to project/name")
-    parser.add_argument("--entity", default=None, help="W&B entity")
-    parser.add_argument("--name", default="exp", help="save to project/name")
+    parser.add_argument(
+        "--project", default="findersai/train", help="save to project/name"
+    )
+    parser.add_argument("--entity", default="project09", help="W&B entity")
+    parser.add_argument("--name", default="v7_e6", help="save to project/name")
     parser.add_argument(
         "--exist-ok",
         action="store_true",

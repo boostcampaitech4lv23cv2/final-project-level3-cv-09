@@ -57,11 +57,6 @@ from utils.torch_utils import (
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 import wandb
 
-# wandb.init(
-#     project="YOLOv7",
-#     entity="project09",
-#     name="test",
-# )
 logger = logging.getLogger(__name__)
 
 
@@ -771,12 +766,15 @@ def train(hyp, opt, device, tb_writer=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--weights", type=str, default="yolov7-tiny.pt", help="initial weights path"
+        "--weights",
+        type=str,
+        default="weight/yolov7-e6_training.pt",
+        help="initial weights path",
     )
     parser.add_argument(
         "--cfg",
         type=str,
-        default="cfg/training/yolov7-tiny.yaml",
+        default="cfg/training/yolov7-e6.yaml",
         help="model.yaml path",
     )
     parser.add_argument(
@@ -793,7 +791,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument(
-        "--batch-size", type=int, default=64, help="total batch size for all GPUs"
+        "--batch-size", type=int, default=8, help="total batch size for all GPUs"
     )
     parser.add_argument(
         "--img-size",
@@ -856,7 +854,7 @@ if __name__ == "__main__":
         "--project", default="findersai/train", help="save to project/name"
     )
     parser.add_argument("--entity", default="project09", help="W&B entity")
-    parser.add_argument("--name", default="exp", help="save to project/name")
+    parser.add_argument("--name", default="v7_e6", help="save to project/name")
     parser.add_argument(
         "--exist-ok",
         action="store_true",
