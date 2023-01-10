@@ -55,7 +55,13 @@ from utils.torch_utils import (
     is_parallel,
 )
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
+import wandb
 
+wandb.init(
+    project="YOLOv7",
+    entity="project09",
+    name="test",
+)
 logger = logging.getLogger(__name__)
 
 
