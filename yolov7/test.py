@@ -377,6 +377,7 @@ def test(
             "Speed: %.1f/%.1f/%.1f ms inference/NMS/total per %gx%g image at batch-size %g"
             % t
         )
+        print("FPS: %.1f" % (1000 / t[2]))
 
     # Plots
     if plots:
@@ -439,10 +440,17 @@ def test(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="test.py")
     parser.add_argument(
-        "--weights", nargs="+", type=str, default="yolov7.pt", help="model.pt path(s)"
+        "--weights",
+        nargs="+",
+        type=str,
+        default="yolov7-tiny.pt",
+        help="model.pt path(s)",
     )
     parser.add_argument(
-        "--data", type=str, default="data/coco.yaml", help="*.data path"
+        "--data",
+        type=str,
+        default="../../data/dataset/4th_run_124.yaml",
+        help="*.data path",
     )
     parser.add_argument(
         "--batch-size", type=int, default=32, help="size of each image batch"
@@ -460,7 +468,7 @@ if __name__ == "__main__":
         "--task", default="val", help="train, val, test, speed or study"
     )
     parser.add_argument(
-        "--device", default="", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
+        "--device", default="0", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
     )
     parser.add_argument(
         "--single-cls", action="store_true", help="treat as single-class dataset"
@@ -481,7 +489,9 @@ if __name__ == "__main__":
         action="store_true",
         help="save a cocoapi-compatible JSON results file",
     )
-    parser.add_argument("--project", default="runs/test", help="save to project/name")
+    parser.add_argument(
+        "--project", default="findersai/test", help="save to project/name"
+    )
     parser.add_argument("--name", default="exp", help="save to project/name")
     parser.add_argument(
         "--exist-ok",
