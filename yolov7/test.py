@@ -112,7 +112,7 @@ def test(
                 .type_as(next(model.parameters()))
             )  # run once
         task = (
-            opt.task if opt.task in ("train", "val", "test") else "val"
+            opt.task if opt.task in ("train", "val", "val_test", "test") else "val_test"
         )  # path to train/val/test images
         dataloader = create_dataloader(
             data[task],
@@ -465,7 +465,7 @@ if __name__ == "__main__":
         "--iou-thres", type=float, default=0.65, help="IOU threshold for NMS"
     )
     parser.add_argument(
-        "--task", default="val", help="train, val, test, speed or study"
+        "--task", default="val_test", help="train, val, test, speed or study"
     )
     parser.add_argument(
         "--device", default="0", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
@@ -510,7 +510,7 @@ if __name__ == "__main__":
     print(opt)
     # check_requirements()
 
-    if opt.task in ("train", "val", "test"):  # run normally
+    if opt.task in ("train", "val", "val_test", "test"):  # run normally
         test(
             opt.data,
             opt.weights,
