@@ -9,6 +9,7 @@ import copy
 st.set_page_config(layout="wide")
 
 root = "../data/"
+save_dir = os.path.join(root + "new")
 
 
 @st.cache(allow_output_mutation=True)
@@ -37,12 +38,12 @@ def make_check_box(tab_bbox, cls, viz, idx) -> None:
         viz[idx] = tab_bbox.checkbox(cls, value=False)
 
 
-def make_bbox(image, labels, viz, tab_label):
+def make_bbox(image, labels, viz, bar_columns):
     for idx, labels in enumerate(labels):
 
         labels = labels.split(" ")
         label, coordinate = labels[0], labels[1:]
-        make_check_box(tab_label, st.session_state.classes[int(label)], viz, idx)
+        make_check_box(bar_columns, st.session_state.classes[int(label)], viz, idx)
 
         if viz[idx]:
             centerX, centerY, width, height = map(float, coordinate)
@@ -66,9 +67,7 @@ def make_bbox(image, labels, viz, tab_label):
     return image
 
 
-def make_bbox_image(index, tab_bbox):
-    tab_bbox_col1, tab_bbox_col2 = tab_bbox.columns(2)
-
+def make_bbox_image(index, tab_bbox, bar_columns):
     image = cv2.imread(os.path.join(st.session_state.datas[index]), cv2.IMREAD_COLOR)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -77,10 +76,12 @@ def make_bbox_image(index, tab_bbox):
     viz = [True for _ in labels]
     labels_txt.close()
 
-    image = make_bbox(image, labels, viz, tab_bbox_col2)
-    # image = cv2.resize(image, (640, 640))
+    image = make_bbox(image, labels, viz, bar_columns)
+    image = cv2.resize(image, (960, 540))
 
-    tab_bbox_col1.image(image, caption="Selected Image")
+    tab_bbox.image(image, caption="Selected Image")
+
+    return labels, viz
 
 
 def main():
@@ -90,18 +91,39 @@ def main():
         st.session_state.classes,
         st.session_state.datas,
         st.session_state.labels,
-        st.session_state.file_names,
+        st.session_state.filenames,
     ) = load_data()
 
     idx = st.selectbox(
         "Select Image",
-        range(len(st.session_state.datas)),
-        format_func=lambda x: st.session_state.datas[x],
+        range(len(st.session_state.filenames)),
+        format_func=lambda x: st.session_state.filenames[x],
     )
 
     tab_bbox, tab_prediction = st.tabs(["Image", "Predict"])
 
-    make_bbox_image(idx, tab_bbox)
+    with st.sidebar.container():
+        label_info, confirmed_label = make_bbox_image(idx, tab_bbox, st.sidebar)
+
+    with st.sidebar.container():
+        checkbox = st.sidebar.checkbox("재대로 됐는지 확인하세요")
+        btn_clicked = st.sidebar.button(
+            "BBox Save", key="confirm_btn", disabled=(checkbox is False)
+        )
+
+    if btn_clicked:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_txt = [
+            label for idx, label in enumerate(label_info) if confirmed_label[idx]
+        ]
+        f = open(
+            os.path.join(save_dir, f"{st.session_state.labels[idx].split('/')[-1]}"),
+            "w",
+        )
+        for l in save_txt:
+            f.write(l)
+        f.close()
 
 
 main()
