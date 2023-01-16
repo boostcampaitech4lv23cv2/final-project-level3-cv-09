@@ -33,9 +33,9 @@ def load_data():
 
 def make_check_box(tab_bbox, cls, viz, idx) -> None:
     if viz[idx]:
-        viz[idx] = tab_bbox.checkbox(cls, value=True)
+        viz[idx] = tab_bbox.checkbox(cls + f"{idx}", value=True)
     else:
-        viz[idx] = tab_bbox.checkbox(cls, value=False)
+        viz[idx] = tab_bbox.checkbox(cls + f"{idx}", value=False)
 
 
 def make_bbox(image, labels, viz, bar_columns):
