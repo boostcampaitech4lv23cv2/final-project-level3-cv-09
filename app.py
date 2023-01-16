@@ -4,7 +4,7 @@ import yaml
 import os
 import cv2
 import numpy as np
-import copy
+import re
 
 st.set_page_config(layout="wide")
 
@@ -86,15 +86,16 @@ def make_bbox_image(index, tab_bbox, bar_columns):
 
 def main():
     st.title("FindersAI")
+    if "delete_list" not in st.session_state:
+        (
+            st.session_state.classes,
+            st.session_state.datas,
+            st.session_state.labels,
+            st.session_state.filenames,
+        ) = load_data()
+        st.session_state.delete_list = ""
 
-    (
-        st.session_state.classes,
-        st.session_state.datas,
-        st.session_state.labels,
-        st.session_state.filenames,
-    ) = load_data()
-
-    idx = st.selectbox(
+    idx = st.select_slider(
         "Select Image",
         range(len(st.session_state.filenames)),
         format_func=lambda x: st.session_state.filenames[x],
@@ -102,14 +103,31 @@ def main():
 
     tab_bbox, tab_prediction = st.tabs(["Image", "Predict"])
 
-    with st.sidebar.container():
-        label_info, confirmed_label = make_bbox_image(idx, tab_bbox, st.sidebar)
+    label_info, confirmed_label = make_bbox_image(idx, tab_bbox, st.sidebar)
 
-    with st.sidebar.container():
-        checkbox = st.sidebar.checkbox("재대로 됐는지 확인하세요")
-        btn_clicked = st.sidebar.button(
-            "BBox Save", key="confirm_btn", disabled=(checkbox is False)
+    col1, col2 = tab_bbox.columns(2)
+
+    delete_btn = col1.button(label="삭제 추가", key="delete_btn")
+    cancel_delete_btn = col2.button(label="삭제 취소", key="delete_btn2")
+
+    if delete_btn:
+        st.session_state.delete_list += st.session_state.filenames[idx] + "\n"
+
+    if cancel_delete_btn:
+        st.session_state.delete_list = re.sub(
+            st.session_state.filenames[idx] + "\n", "", st.session_state.delete_list
         )
+
+    checkbox = st.sidebar.checkbox("재대로 됐는지 확인하세요")
+    btn_clicked = st.sidebar.button(
+        "BBox Save", key="confirm_btn", disabled=(checkbox is False)
+    )
+
+    st.sidebar.text_area(label="delete Image List", value=st.session_state.delete_list)
+    btn_clicked2 = st.sidebar.button(
+        "Make Delete Image txt file",
+        key="confirm_btn2",
+    )
 
     if btn_clicked:
         if not os.path.exists(save_dir):
@@ -123,6 +141,17 @@ def main():
         )
         for l in save_txt:
             f.write(l)
+        f.close()
+
+    if btn_clicked2:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_txt2 = st.session_state.delete_list
+        f = open(
+            os.path.join(save_dir, "remove_list.txt"),
+            "w",
+        )
+        f.write(save_txt2)
         f.close()
 
 
