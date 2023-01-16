@@ -86,14 +86,15 @@ def make_bbox_image(index, tab_bbox, bar_columns):
 
 def main():
     st.title("FindersAI")
-    if "delete_list" not in st.session_state:
+    if "delete_jpg_list" not in st.session_state:
         (
             st.session_state.classes,
             st.session_state.datas,
             st.session_state.labels,
             st.session_state.filenames,
         ) = load_data()
-        st.session_state.delete_list = ""
+        st.session_state.delete_jpg_list = ""
+        st.session_state.delete_txt_list = ""
 
     idx = st.select_slider(
         "Select Image",
@@ -111,11 +112,25 @@ def main():
     cancel_delete_btn = col2.button(label="삭제 취소", key="delete_btn2")
 
     if delete_btn:
-        st.session_state.delete_list += st.session_state.datas[idx] + "\n"
+        st.session_state.delete_jpg_list += st.session_state.datas[idx] + "\n"
+        st.session_state.delete_txt_list += (
+            st.session_state.datas[idx]
+            .replace("jpg", "txt")
+            .replace("images", "labels")
+            + "\n"
+        )
 
     if cancel_delete_btn:
+        st.session_state.delete_jpg_list = re.sub(
+            st.session_state.datas[idx] + "\n", "", st.session_state.delete_jpg_list
+        )
         st.session_state.delete_list = re.sub(
-            st.session_state.datas[idx] + "\n", "", st.session_state.delete_list
+            st.session_state.datas[idx]
+            .replace("jpg", "txt")
+            .replace("images", "labels")
+            + "\n",
+            "",
+            st.session_state.delete_txt_list,
         )
 
     checkbox = st.sidebar.checkbox("재대로 됐는지 확인하세요")
@@ -123,7 +138,9 @@ def main():
         "BBox Save", key="confirm_btn", disabled=(checkbox is False)
     )
 
-    st.sidebar.text_area(label="delete Image List", value=st.session_state.delete_list)
+    st.sidebar.text_area(
+        label="delete Image List", value=st.session_state.delete_jpg_list
+    )
     btn_clicked2 = st.sidebar.button(
         "Make Delete Image txt file",
         key="confirm_btn2",
@@ -146,7 +163,7 @@ def main():
     if btn_clicked2:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        save_txt2 = st.session_state.delete_list
+        save_txt2 = st.session_state.delete_jpg_list + st.session_state.delete_txt_list
         f = open(
             os.path.join(save_dir, "remove_list.txt"),
             "w",
