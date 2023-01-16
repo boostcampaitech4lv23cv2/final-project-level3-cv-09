@@ -25,7 +25,9 @@ import test  # import test.py to get mAP after each epoch
 from models.experimental import attempt_load
 from models.yolo import Model
 from utils.autoanchor import check_anchors
-from utils.datasets import create_dataloader
+
+# from utils.datasets import create_dataloader
+from utils.datasets_for_albu import create_dataloader
 from utils.general import (
     labels_to_class_weights,
     increment_path,
@@ -768,13 +770,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--weights",
         type=str,
-        default="weight/yolov7-e6_training.pt",
+        default="weight/yolov7x_training.pt",
         help="initial weights path",
     )
     parser.add_argument(
         "--cfg",
         type=str,
-        default="cfg/training/yolov7-e6.yaml",
+        default="cfg/training/yolov7x.yaml",
         help="model.yaml path",
     )
     parser.add_argument(
@@ -786,18 +788,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--hyp",
         type=str,
-        default="data/hyp.scratch.custom.yaml",
+        default="data/hyp.scratch.custom_Adam.yaml",
         help="hyperparameters path",
     )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument(
-        "--batch-size", type=int, default=8, help="total batch size for all GPUs"
+        "--batch-size", type=int, default=32, help="total batch size for all GPUs"
     )
     parser.add_argument(
         "--img-size",
         nargs="+",
         type=int,
-        default=[1280, 1280],
+        default=[640, 640],
         help="[train, test] image sizes",
     )
     parser.add_argument("--rect", action="store_true", help="rectangular training")
@@ -854,7 +856,7 @@ if __name__ == "__main__":
         "--project", default="findersai/train", help="save to project/name"
     )
     parser.add_argument("--entity", default="project09", help="W&B entity")
-    parser.add_argument("--name", default="v7_e6", help="save to project/name")
+    parser.add_argument("--name", default="v7x_half_Adam", help="save to project/name")
     parser.add_argument(
         "--exist-ok",
         action="store_true",
