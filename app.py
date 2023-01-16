@@ -15,10 +15,10 @@ save_dir = os.path.join(root + "new")
 @st.cache(allow_output_mutation=True)
 def load_data():
     # text file 담당 부분 개별 생성 해야합니다.
-    yaml_path = os.path.join(root, "test/4th_run_124.yaml")
+    yaml_path = os.path.join(root, "mixed/mix.yaml")
     f = open(yaml_path, "r")
     dataset_info = yaml.load(f, yaml.FullLoader)
-    txt_dir = dataset_info["test"]  # txt file_dir
+    txt_dir = dataset_info["mix"]  # txt file_dir
     classes = {idx: name for idx, name in enumerate(dataset_info["names"])}
     f.close()
 
@@ -124,7 +124,7 @@ def main():
         st.session_state.delete_jpg_list = re.sub(
             st.session_state.datas[idx] + "\n", "", st.session_state.delete_jpg_list
         )
-        st.session_state.delete_list = re.sub(
+        st.session_state.delete_txt_list = re.sub(
             st.session_state.datas[idx]
             .replace("jpg", "txt")
             .replace("images", "labels")
