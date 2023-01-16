@@ -462,7 +462,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.mosaic_border = [-img_size // 2, -img_size // 2]
         self.stride = stride
         self.path = path
-        self.albumentations = Albumentations() if augment else None
+        self.albumentations_before = Albumentations_Before() if augment else None
+        self.albumentations_after = Albumentations_After() if augment else None
 
         try:
             f = []  # image files
@@ -738,7 +739,9 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     perspective=hyp["perspective"],
                 )
 
-            # img, labels = self.albumentations(img, labels)
+            img, labels = self.albumentations_after(
+                img, labels
+            )  # ALBUMENTATION AFTER MOSAIC
 
             # Augment colorspace
             augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
@@ -923,7 +926,7 @@ def load_mosaic(self, index):
         labels, segments = self.labels[index].copy(), self.segments[index].copy()
 
         # Albumentation 적용
-        img, labels = self.albumentations(img0, labels)
+        img, labels = self.albumentations_before(img0, labels)
         h, w, _ = img.shape
 
         # place img in img4
@@ -1012,7 +1015,7 @@ def load_mosaic9(self, index):
         labels, segments = self.labels[index].copy(), self.segments[index].copy()
 
         # Albumentation 적용
-        img, labels = self.albumentations(img0, labels)
+        img, labels = self.albumentations_before(img0, labels)
         h, w, _ = img.shape
 
         # place img in img9
@@ -1567,7 +1570,7 @@ def pastein(image, labels, sample_labels, sample_images, sample_masks):
     return labels
 
 
-class Albumentations:
+class Albumentations_Before:
     # YOLOv5 Albumentations class (optional, only used if package is installed)
     def __init__(self):
         self.transform = None
@@ -1585,7 +1588,7 @@ class Albumentations:
                 # A.ToGray(p=1),
                 # A.VerticalFlip(p=1)
                 # A.ImageCompression(quality_lower=75, p=0.01),
-                A.RandomSizedBBoxSafeCrop(640, 640, p=0.5),
+                A.RandomCrop(640, 640, p=1),
                 A.LongestMaxSize(640, p=1),  ######### !! 필-수 !! #########
                 A.PadIfNeeded(  ######### !! 필-수 !! #########
                     640,
@@ -1596,6 +1599,43 @@ class Albumentations:
                 ),
             ],
             bbox_params=A.BboxParams(format="yolo", label_fields=["class_labels"]),
+        )
+
+        # logging.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
+
+    def __call__(self, im, labels, p=1.0):
+        if self.transform and random.random() < p:
+            new = self.transform(
+                image=im, bboxes=labels[:, 1:], class_labels=labels[:, 0]
+            )  # transformed
+            im, labels = new["image"], np.array(
+                [[c, *b] for c, b in zip(new["class_labels"], new["bboxes"])]
+            )
+        return im, labels
+
+
+class Albumentations_After:
+    # YOLOv5 Albumentations class (optional, only used if package is installed)
+    def __init__(self):
+        self.transform = None
+        import albumentations as A
+
+        self.transform = A.Compose(
+            [
+                # A.CLAHE(p=0.01),
+                # A.RandomBrightnessContrast(
+                #     brightness_limit=0.2, contrast_limit=0.2, p=0.01
+                # ),
+                # A.RandomGamma(gamma_limit=[80, 120], p=0.01),
+                # A.Blur(p=0.01),
+                # A.MedianBlur(p=0.01),
+                # A.ToGray(p=1),
+                # A.VerticalFlip(p=1)
+                # A.Rotate(limit=(45, 45), p=1)
+            ],
+            bbox_params=A.BboxParams(
+                format="pascal_voc", label_fields=["class_labels"]
+            ),
         )
 
         # logging.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
