@@ -111,11 +111,11 @@ def main():
     cancel_delete_btn = col2.button(label="삭제 취소", key="delete_btn2")
 
     if delete_btn:
-        st.session_state.delete_list += st.session_state.filenames[idx] + "\n"
+        st.session_state.delete_list += st.session_state.datas[idx] + "\n"
 
     if cancel_delete_btn:
         st.session_state.delete_list = re.sub(
-            st.session_state.filenames[idx] + "\n", "", st.session_state.delete_list
+            st.session_state.datas[idx] + "\n", "", st.session_state.delete_list
         )
 
     checkbox = st.sidebar.checkbox("재대로 됐는지 확인하세요")
