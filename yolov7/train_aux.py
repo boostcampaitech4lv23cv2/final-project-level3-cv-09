@@ -57,11 +57,8 @@ from utils.torch_utils import (
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 import wandb
 
-wandb.init(
-    project="YOLOv7",
-    entity="project09",
-    name="test",
-)
+from utils.scheduler import CosineAnnealingWarmUpRestarts
+
 logger = logging.getLogger(__name__)
 
 
@@ -251,6 +248,14 @@ def train(hyp, opt, device, tb_writer=None):
         optimizer = optim.SGD(
             pg0, lr=hyp["lr0"], momentum=hyp["momentum"], nesterov=True
         )
+    if opt.adamw:
+        optimizer = optim.AdamW(
+            pg0, lr=hyp["lr0"], betas=(hyp["momentum"], 0.999)
+        )  # adjust beta1 to momentum
+    else:
+        optimizer = optim.SGD(
+            pg0, lr=hyp["lr0"], momentum=hyp["momentum"], nesterov=True
+        )
 
     optimizer.add_param_group(
         {"params": pg1, "weight_decay": hyp["weight_decay"]}
@@ -260,7 +265,6 @@ def train(hyp, opt, device, tb_writer=None):
         "Optimizer groups: %g .bias, %g conv.weight, %g other"
         % (len(pg2), len(pg1), len(pg0))
     )
-    del pg0, pg1, pg2
 
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
     # https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#OneCycleLR
@@ -270,8 +274,23 @@ def train(hyp, opt, device, tb_writer=None):
         )  # linear
     else:
         lf = one_cycle(1, hyp["lrf"], epochs)  # cosine 1->hyp['lrf']
-    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
+    if opt.cosine:  # cosine annealing 사용시 adamw 자동 사용 설정 해뒀습니다.
+        optimizer = optim.AdamW(
+            pg0, lr=0, betas=(hyp["momentum"], 0.999)
+        )  # adjust beta1 to momentum
+        scheduler = CosineAnnealingWarmUpRestarts(
+            optimizer,
+            T_0=15,  # epoch에 따라 T_0 값 변경해주세요!
+            T_mult=1,
+            eta_max=hyp["lr0"],
+            T_up=3,  # epoch에 따라 T_up 값 변경해주세요!
+            gamma=0.5,
+        )
+    else:
+        scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
     # plot_lr_scheduler(optimizer, scheduler, epochs)
+
+    del pg0, pg1, pg2
 
     # EMA
     ema = ModelEMA(model) if rank in [-1, 0] else None
@@ -837,6 +856,9 @@ if __name__ == "__main__":
         "--adam", action="store_true", help="use torch.optim.Adam() optimizer"
     )
     parser.add_argument(
+        "--adamw", action="store_true", help="use torch.optim.AdamW() optimizer"
+    )
+    parser.add_argument(
         "--sync-bn",
         action="store_true",
         help="use SyncBatchNorm, only available in DDP mode",
@@ -889,6 +911,9 @@ if __name__ == "__main__":
         "--v5-metric",
         action="store_true",
         help="assume maximum recall as 1.0 in AP calculation",
+    )
+    parser.add_argument(
+        "--cosine", action="store_true", help="use CosineAnnealing scheduler"
     )
     opt = parser.parse_args()
 
