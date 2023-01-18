@@ -23,7 +23,9 @@ def load_data():
     f.close()
 
     data_dir_txt = open(txt_dir, "r")
-    datas = [os.path.join(root, file[:-1]) for file in data_dir_txt.readlines()]
+    datas = [
+        os.path.join(root, file.replace("\n", "")) for file in data_dir_txt.readlines()
+    ]
     labels = [file.replace("images", "labels").replace("jpg", "txt") for file in datas]
     file_names = [file_dir.split("/")[-1] for file_dir in datas]
     data_dir_txt.close()
@@ -77,7 +79,7 @@ def make_bbox_image(index, tab_bbox, bar_columns):
     labels_txt.close()
 
     image = make_bbox(image, labels, viz, bar_columns)
-    image = cv2.resize(image, (960, 540))
+    # image = cv2.resize(image, (960, 540))
 
     tab_bbox.image(image, caption="Selected Image")
 
@@ -96,7 +98,7 @@ def main():
         st.session_state.delete_jpg_list = ""
         st.session_state.delete_txt_list = ""
 
-    idx = st.select_slider(
+    idx = st.selectbox(
         "Select Image",
         range(len(st.session_state.filenames)),
         format_func=lambda x: st.session_state.filenames[x],
@@ -113,22 +115,14 @@ def main():
 
     if delete_btn:
         st.session_state.delete_jpg_list += st.session_state.datas[idx] + "\n"
-        st.session_state.delete_txt_list += (
-            st.session_state.datas[idx]
-            .replace("jpg", "txt")
-            .replace("images", "labels")
-            + "\n"
-        )
+        st.session_state.delete_txt_list += st.session_state.labels[idx] + "\n"
 
     if cancel_delete_btn:
         st.session_state.delete_jpg_list = re.sub(
             st.session_state.datas[idx] + "\n", "", st.session_state.delete_jpg_list
         )
         st.session_state.delete_txt_list = re.sub(
-            st.session_state.datas[idx]
-            .replace("jpg", "txt")
-            .replace("images", "labels")
-            + "\n",
+            st.session_state.labels[idx] + "\n",
             "",
             st.session_state.delete_txt_list,
         )
@@ -166,7 +160,7 @@ def main():
         save_txt2 = st.session_state.delete_jpg_list + st.session_state.delete_txt_list
         f = open(
             os.path.join(save_dir, "remove_list.txt"),
-            "w",
+            "a",
         )
         f.write(save_txt2)
         f.close()
