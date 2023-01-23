@@ -1623,10 +1623,10 @@ def random_pastein(image, labels, sample_labels, sample_images, sample_masks):
                     temp_crop[m_ind] = r_image[m_ind]
                     if len(labels):
                         labels = np.concatenate(
-                            (labels, [[sample_labels[sel_ind], *box]]), 0
+                            (labels, [[sample_labels[sel_ind][0], *box]]), 0
                         )
                     else:
-                        labels = np.array([[sample_labels[sel_ind], *box]])
+                        labels = np.array([[sample_labels[sel_ind][0], *box]])
                     image[ymin:ymax, xmin:xmax] = temp_crop
 
     return labels
