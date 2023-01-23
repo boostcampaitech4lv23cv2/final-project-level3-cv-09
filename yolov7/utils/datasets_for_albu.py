@@ -743,28 +743,37 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             #     img, labels
             # )  # ALBUMENTATION AFTER MOSAIC
 
-            # Augment colorspace
-            augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
+            # # Augment colorspace
+            # augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
 
             # Apply cutouts
             # if random.random() < 0.9:
             #     labels = cutout(img, labels)
 
             if random.random() < hyp["paste_in"]:
-                sample_labels, sample_images, sample_masks = [], [], []
+                sample_labels, sample_images, sample_masks, sample_bboxes = (
+                    [],
+                    [],
+                    [],
+                    [],
+                )
                 while len(sample_labels) < 30:
-                    sample_labels_, sample_images_, sample_masks_ = load_samples(
-                        self, random.randint(0, len(self.labels) - 1)
-                    )
+                    (
+                        sample_labels_,
+                        sample_images_,
+                        sample_masks_,
+                    ) = load_samples(self, random.randint(0, len(self.labels) - 1))
                     sample_labels += sample_labels_
                     sample_images += sample_images_
                     sample_masks += sample_masks_
+
                     # print(len(sample_labels))
                     if len(sample_labels) == 0:
                         break
-                labels = random_pastein(
-                    img, labels, sample_labels, sample_images, sample_masks
-                )
+                labels = change_pastein(img, labels, sample_labels, sample_images)
+
+            # Augment colorspace
+            augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
 
         nL = len(labels)  # number of labels
         if nL:
@@ -1248,7 +1257,7 @@ def sample_segments(img, labels, segments, probability=0.5):
             if (box[2] <= box[0]) or (box[3] <= box[1]):
                 continue
 
-            sample_labels.append(l[0])
+            sample_labels.append(l)
 
             mask = np.zeros(img.shape, np.uint8)
 
@@ -1629,14 +1638,15 @@ def change_pastein(image, labels, sample_labels, sample_images):
         if random.random() < 0.5 and len(sample_labels) > 1 and len(labels) > 1:
             sample_sel_ind = random.randint(0, len(sample_labels) - 1)
             sample_label = sample_labels.pop(sample_sel_ind)
+            # print(sample_label)
             sam_class, sam_xmin, sam_ymin, sam_xmax, sam_ymax = sample_label
             xmin, ymin, xmax, ymax = label[1:]
-            sam_xcen = (sam_xmax + sam_xmin) / 2
-            sam_ycen = (sam_ymax + sam_ymin) / 2
-            xcen = (xmax + xmin) / 2
-            ycen = (ymax + ymin) / 2
+            xcen = round((xmax + xmin) / 2)
+            ycen = round((ymax + ymin) / 2)
             sam_width = sam_xmax - sam_xmin
             sam_height = sam_ymax - sam_ymin
+            if sam_width <= 0 or sam_height <= 0:
+                continue
             width = xmax - xmin
             height = ymax - ymin
 
@@ -1647,22 +1657,29 @@ def change_pastein(image, labels, sample_labels, sample_images):
 
             new_width = sam_width * ratio
             new_height = sam_height * ratio
-            new_xmin = xcen - sam_width / 2
-            new_xmax = xcen + sam_width / 2
-            new_ymin = ycen - sam_height / 2
-            new_ymax = ycen + sam_height / 2
+            new_xmin = max(0, round(xcen - new_width / 2))
+            new_xmax = min(w, round(xcen + new_width / 2))
+            new_ymin = max(0, round(ycen - new_height / 2))
+            new_ymax = min(h, round(ycen + new_height / 2))
 
             # labels[ind] = np.array([sam_class, sam_xmin, sam_xmax, sam_ymin, sam_ymax], dtype=np.float32)
-
+            # print("w", new_width)
+            # print("h", new_height)
+            # print("xi", new_xmin)
+            # print("xa", new_xmax)
+            # print("yi", new_ymin)
+            # print("ya", new_ymax)
             new_box = np.array(
-                [sam_class, new_xmin, new_xmax, new_ymin, new_ymax], dtype=np.float32
+                [sam_class, new_xmin, new_ymin, new_xmax, new_ymax], dtype=np.float32
             )
 
             if len(labels):
                 ioa = bbox_ioa(new_box[1:], labels[:ind, 1:5])
+                # print(ioa.shape)
                 if ind + 1 < len(labels) - 1:
+                    # print(bbox_ioa(new_box[1:], labels[ind + 1 :, 1:5]))
                     ioa = np.concatenate(
-                        ioa, bbox_ioa(new_box[1:], labels[ind + 1 :, 1:5])
+                        (ioa, bbox_ioa(new_box[1:], labels[ind + 1 :, 1:5])), axis=0
                     )  # intersection over area
             else:
                 ioa = np.zeros(1)
@@ -1673,13 +1690,18 @@ def change_pastein(image, labels, sample_labels, sample_images):
                 and (new_xmax > new_xmin + 20)
                 and (new_ymax > new_ymin + 20)
             ):
+                # print("index", sample_sel_ind)
+                # print("lenL", len(sample_images))
                 hs, ws, cs = sample_images[sample_sel_ind].shape
                 r_image = sample_images[sample_sel_ind]
-                sample_image_box = r_image[sam_ymin:sam_ymax, sam_xmin:sam_xmax]
-                sample_image_box = cv2.resize(sample_image_box, (new_width, new_height))
+                sample_image_box = r_image
+                sample_image_box = cv2.resize(
+                    sample_image_box, (new_xmax - new_xmin, new_ymax - new_ymin)
+                )
                 image[new_ymin:new_ymax, new_xmin:new_xmax] = sample_image_box
 
                 labels[ind] = new_box
+
                 # temp_crop = image[new_ymin:new_ymax, new_xmin:new_xmax]
                 # m_ind = mask > 0
                 # if m_ind.astype(np.int32).sum() > 60:
