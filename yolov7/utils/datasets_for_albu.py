@@ -751,18 +751,11 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             #     labels = cutout(img, labels)
 
             if random.random() < hyp["paste_in"]:
-                sample_labels, sample_images, sample_masks, sample_bboxes = (
-                    [],
-                    [],
-                    [],
-                    [],
-                )
+                sample_labels, sample_images, sample_masks = [], [], []
                 while len(sample_labels) < 30:
-                    (
-                        sample_labels_,
-                        sample_images_,
-                        sample_masks_,
-                    ) = load_samples(self, random.randint(0, len(self.labels) - 1))
+                    sample_labels_, sample_images_, sample_masks_ = load_samples(
+                        self, random.randint(0, len(self.labels) - 1)
+                    )
                     sample_labels += sample_labels_
                     sample_images += sample_images_
                     sample_masks += sample_masks_
@@ -771,6 +764,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     if len(sample_labels) == 0:
                         break
                 labels = change_pastein(img, labels, sample_labels, sample_images)
+                # labels = random_pastein(img, labels, sample_labels, sample_images, sample_masks)
 
             # Augment colorspace
             augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
