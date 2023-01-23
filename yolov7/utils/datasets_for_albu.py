@@ -739,9 +739,9 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     perspective=hyp["perspective"],
                 )
 
-            img, labels = self.albumentations_after(
-                img, labels
-            )  # ALBUMENTATION AFTER MOSAIC
+            # img, labels = self.albumentations_after(
+            #     img, labels
+            # )  # ALBUMENTATION AFTER MOSAIC
 
             # Augment colorspace
             augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
@@ -762,7 +762,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     # print(len(sample_labels))
                     if len(sample_labels) == 0:
                         break
-                labels = pastein(
+                labels = random_pastein(
                     img, labels, sample_labels, sample_images, sample_masks
                 )
 
@@ -926,7 +926,7 @@ def load_mosaic(self, index):
         labels, segments = self.labels[index].copy(), self.segments[index].copy()
 
         # Albumentation 적용
-        img, labels = self.albumentations_before(img0, labels)
+        # img, labels = self.albumentations_before(img0, labels)
         h, w, _ = img.shape
 
         # place img in img4
@@ -1015,7 +1015,7 @@ def load_mosaic9(self, index):
         labels, segments = self.labels[index].copy(), self.segments[index].copy()
 
         # Albumentation 적용
-        img, labels = self.albumentations_before(img0, labels)
+        # img, labels = self.albumentations_before(img0, labels)
         h, w, _ = img.shape
 
         # place img in img9
@@ -1219,6 +1219,16 @@ def remove_background(img, labels, segments):
 
 def sample_segments(img, labels, segments, probability=0.5):
     # Implement Copy-Paste augmentation https://arxiv.org/abs/2012.07177, labels as nx5 np.array(cls, xyxy)
+    segments = []
+    for clss, xmin, ymin, xmax, ymax in labels:
+        segment_bbox = []
+        for xs in range(round(xmin), round(xmax) + 1):
+            for ys in range(round(ymin), round(ymax) + 1):
+                segment = []
+                segment.append(xs)
+                segment.append(ys)
+                segment_bbox.append(segment)
+        segments.append(np.array(segment_bbox))
     n = len(segments)
     sample_labels = []
     sample_images = []
@@ -1570,6 +1580,121 @@ def pastein(image, labels, sample_labels, sample_images, sample_masks):
     return labels
 
 
+def random_pastein(image, labels, sample_labels, sample_images, sample_masks):
+    h, w = image.shape[:2]
+    for _ in range(20):
+        if random.random() < 0.2 and len(sample_labels) > 1:
+            sel_ind = random.randint(0, len(sample_labels) - 1)
+            mask = sample_masks[sel_ind]
+            mask_h, mask_w, _ = mask.shape
+
+            xmin = max(0, random.randint(0, w) - mask_w)
+            ymin = max(0, random.randint(0, h) - mask_h)
+            xmax = min(xmin + mask_w, w)
+            ymax = min(ymin + mask_h, h)
+
+            box = np.array([xmin, ymin, xmax, ymax], dtype=np.float32)
+
+            if len(labels):
+                ioa = bbox_ioa(box, labels[:, 1:5])  # intersection over area
+            else:
+                ioa = np.zeros(1)
+
+            if (
+                (ioa < 0.30).all()
+                and len(sample_labels)
+                and (xmax > xmin + 20)
+                and (ymax > ymin + 20)
+            ):
+                hs, ws, cs = sample_images[sel_ind].shape
+                r_image = sample_images[sel_ind]
+                temp_crop = image[ymin:ymax, xmin:xmax]
+                m_ind = mask > 0
+                if m_ind.astype(np.int32).sum() > 60:
+                    temp_crop[m_ind] = r_image[m_ind]
+                    if len(labels):
+                        labels = np.concatenate(
+                            (labels, [[sample_labels[sel_ind], *box]]), 0
+                        )
+                    else:
+                        labels = np.array([[sample_labels[sel_ind], *box]])
+                    image[ymin:ymax, xmin:xmax] = temp_crop
+
+    return labels
+
+
+def change_pastein(image, labels, sample_labels, sample_images):
+    h, w = image.shape[:2]
+    for ind, label in enumerate(labels):
+        if random.random() < 0.5 and len(sample_labels) > 1 and len(labels) > 1:
+            sample_sel_ind = random.randint(0, len(sample_labels) - 1)
+            sample_label = sample_labels.pop(sample_sel_ind)
+            sam_class, sam_xmin, sam_ymin, sam_xmax, sam_ymax = sample_label
+            xmin, ymin, xmax, ymax = label[1:]
+            sam_xcen = (sam_xmax + sam_xmin) / 2
+            sam_ycen = (sam_ymax + sam_ymin) / 2
+            xcen = (xmax + xmin) / 2
+            ycen = (ymax + ymin) / 2
+            sam_width = sam_xmax - sam_xmin
+            sam_height = sam_ymax - sam_ymin
+            width = xmax - xmin
+            height = ymax - ymin
+
+            if width > height:
+                ratio = width / sam_width
+            else:
+                ratio = height / sam_height
+
+            new_width = sam_width * ratio
+            new_height = sam_height * ratio
+            new_xmin = xcen - sam_width / 2
+            new_xmax = xcen + sam_width / 2
+            new_ymin = ycen - sam_height / 2
+            new_ymax = ycen + sam_height / 2
+
+            # labels[ind] = np.array([sam_class, sam_xmin, sam_xmax, sam_ymin, sam_ymax], dtype=np.float32)
+
+            new_box = np.array(
+                [sam_class, new_xmin, new_xmax, new_ymin, new_ymax], dtype=np.float32
+            )
+
+            if len(labels):
+                ioa = bbox_ioa(new_box[1:], labels[:ind, 1:5])
+                if ind + 1 < len(labels) - 1:
+                    ioa = np.concatenate(
+                        ioa, bbox_ioa(new_box[1:], labels[ind + 1 :, 1:5])
+                    )  # intersection over area
+            else:
+                ioa = np.zeros(1)
+
+            if (
+                (ioa < 0.30).all()
+                and len(sample_labels)
+                and (new_xmax > new_xmin + 20)
+                and (new_ymax > new_ymin + 20)
+            ):
+                hs, ws, cs = sample_images[sample_sel_ind].shape
+                r_image = sample_images[sample_sel_ind]
+                sample_image_box = r_image[sam_ymin:sam_ymax, sam_xmin:sam_xmax]
+                sample_image_box = cv2.resize(sample_image_box, (new_width, new_height))
+                image[new_ymin:new_ymax, new_xmin:new_xmax] = sample_image_box
+
+                labels[ind] = new_box
+                # temp_crop = image[new_ymin:new_ymax, new_xmin:new_xmax]
+                # m_ind = mask > 0
+                # if m_ind.astype(np.int32).sum() > 60:
+                #     temp_crop[m_ind] = r_image[m_ind]
+                #     if len(labels):
+                #         labels = np.concatenate(
+                #             (labels, [[sample_labels[sel_ind], *box]]), 0
+                #         )
+                #     else:
+                #         labels = np.array([[sample_labels[sel_ind], *box]])
+                #     image[ymin:ymax, xmin:xmax] = temp_crop
+
+    return labels
+
+
 class Albumentations_Before:
     # YOLOv5 Albumentations class (optional, only used if package is installed)
     def __init__(self):
@@ -1586,17 +1711,17 @@ class Albumentations_Before:
                 # A.Blur(p=0.01),
                 # A.MedianBlur(p=0.01),
                 # A.ToGray(p=1),
-                # A.VerticalFlip(p=1)
+                # A.VerticalFlip(p=1),
                 # A.ImageCompression(quality_lower=75, p=0.01),
-                A.RandomCrop(640, 640, p=1),
+                # A.MotionBlur((4, 12), p=0.5),
                 A.LongestMaxSize(640, p=1),  ######### !! 필-수 !! #########
-                A.PadIfNeeded(  ######### !! 필-수 !! #########
-                    640,
-                    640,
-                    border_mode=cv2.BORDER_CONSTANT,
-                    value=(114 / 255, 114 / 255, 114 / 255),
-                    p=1,
-                ),
+                # A.PadIfNeeded(  ######### !! 필-수 !! #########
+                #     640,
+                #     640,
+                #     border_mode=cv2.BORDER_CONSTANT,
+                #     value=(114, 114, 114),
+                #     p=1,
+                # ),
             ],
             bbox_params=A.BboxParams(format="yolo", label_fields=["class_labels"]),
         )
@@ -1606,7 +1731,9 @@ class Albumentations_Before:
     def __call__(self, im, labels, p=1.0):
         if self.transform and random.random() < p:
             new = self.transform(
-                image=im, bboxes=labels[:, 1:], class_labels=labels[:, 0]
+                image=im,
+                bboxes=labels[:, 1:],
+                class_labels=labels[:, 0],
             )  # transformed
             im, labels = new["image"], np.array(
                 [[c, *b] for c, b in zip(new["class_labels"], new["bboxes"])]
@@ -1620,23 +1747,23 @@ class Albumentations_After:
         self.transform = None
         import albumentations as A
 
-        self.transform = A.Compose(
-            [
-                # A.CLAHE(p=0.01),
-                # A.RandomBrightnessContrast(
-                #     brightness_limit=0.2, contrast_limit=0.2, p=0.01
-                # ),
-                # A.RandomGamma(gamma_limit=[80, 120], p=0.01),
-                # A.Blur(p=0.01),
-                # A.MedianBlur(p=0.01),
-                # A.ToGray(p=1),
-                # A.VerticalFlip(p=1)
-                # A.Rotate(limit=(45, 45), p=1)
-            ],
-            bbox_params=A.BboxParams(
-                format="pascal_voc", label_fields=["class_labels"]
-            ),
-        )
+        # self.transform = A.Compose(
+        #     [
+        #         # A.CLAHE(p=0.01),
+        #         # A.RandomBrightnessContrast(
+        #         #     brightness_limit=0.2, contrast_limit=0.2, p=0.01
+        #         # ),
+        #         # A.RandomGamma(gamma_limit=[80, 120], p=0.01),
+        #         # A.Blur(p=0.01),
+        #         # A.MedianBlur(p=0.01),
+        #         # A.ToGray(p=1),
+        #         # A.VerticalFlip(p=1)
+        #         # A.Rotate(limit=(45, 45), p=1)
+        #     ],
+        #     bbox_params=A.BboxParams(
+        #         format="pascal_voc", label_fields=["class_labels"]
+        #     ),
+        # )
 
         # logging.info(colorstr('albumentations: ') + ', '.join(f'{x}' for x in self.transform.transforms if x.p))
 
