@@ -764,7 +764,9 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     if len(sample_labels) == 0:
                         break
                 labels = change_pastein(img, labels, sample_labels, sample_images)
-                # labels = random_pastein(img, labels, sample_labels, sample_images, sample_masks)
+                # labels = random_pastein(
+                #     img, labels, sample_labels, sample_images, sample_masks
+                # )
 
             # Augment colorspace
             augment_hsv(img, hgain=hyp["hsv_h"], sgain=hyp["hsv_s"], vgain=hyp["hsv_v"])
@@ -1644,10 +1646,13 @@ def change_pastein(image, labels, sample_labels, sample_images):
             width = xmax - xmin
             height = ymax - ymin
 
-            if width > height:
-                ratio = width / sam_width
-            else:
-                ratio = height / sam_height
+            width_ratio = width / sam_width
+            height_ratio = height / sam_height
+            ratio = max(1, width_ratio, height_ratio)
+            # if width > height:
+            #     ratio = width / sam_width
+            # else:
+            #     ratio = height / sam_height
 
             new_width = sam_width * ratio
             new_height = sam_height * ratio
