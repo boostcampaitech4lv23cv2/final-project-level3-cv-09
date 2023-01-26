@@ -1631,10 +1631,9 @@ def random_pastein(image, labels, sample_labels, sample_images, sample_masks):
 def change_pastein(image, labels, sample_labels, sample_images):
     h, w = image.shape[:2]
     for ind, label in enumerate(labels):
-        if random.random() < 0.5 and len(sample_labels) > 1 and len(labels) > 1:
+        if len(sample_labels) >= 1 and len(labels) >= 1:
             sample_sel_ind = random.randint(0, len(sample_labels) - 1)
             sample_label = sample_labels.pop(sample_sel_ind)
-            # print(sample_label)
             sam_class, sam_xmin, sam_ymin, sam_xmax, sam_ymax = sample_label
             xmin, ymin, xmax, ymax = label[1:]
             xcen = round((xmax + xmin) / 2)
@@ -1649,6 +1648,8 @@ def change_pastein(image, labels, sample_labels, sample_images):
             width_ratio = width / sam_width
             height_ratio = height / sam_height
             ratio = max(1, width_ratio, height_ratio)
+            if ratio > 1.5:
+                continue
             # if width > height:
             #     ratio = width / sam_width
             # else:
@@ -1661,22 +1662,13 @@ def change_pastein(image, labels, sample_labels, sample_images):
             new_ymin = max(0, round(ycen - new_height / 2))
             new_ymax = min(h, round(ycen + new_height / 2))
 
-            # labels[ind] = np.array([sam_class, sam_xmin, sam_xmax, sam_ymin, sam_ymax], dtype=np.float32)
-            # print("w", new_width)
-            # print("h", new_height)
-            # print("xi", new_xmin)
-            # print("xa", new_xmax)
-            # print("yi", new_ymin)
-            # print("ya", new_ymax)
             new_box = np.array(
                 [sam_class, new_xmin, new_ymin, new_xmax, new_ymax], dtype=np.float32
             )
 
             if len(labels):
-                ioa = bbox_ioa(new_box[1:], labels[:ind, 1:5])
-                # print(ioa.shape)
+                ioa = bbox_ioa(new_box[1:], labels[:ind, 1:5])  # intersection over area
                 if ind + 1 < len(labels) - 1:
-                    # print(bbox_ioa(new_box[1:], labels[ind + 1 :, 1:5]))
                     ioa = np.concatenate(
                         (ioa, bbox_ioa(new_box[1:], labels[ind + 1 :, 1:5])), axis=0
                     )  # intersection over area
@@ -1689,9 +1681,7 @@ def change_pastein(image, labels, sample_labels, sample_images):
                 and (new_xmax > new_xmin + 20)
                 and (new_ymax > new_ymin + 20)
             ):
-                # print("index", sample_sel_ind)
-                # print("lenL", len(sample_images))
-                hs, ws, cs = sample_images[sample_sel_ind].shape
+
                 r_image = sample_images[sample_sel_ind]
                 sample_image_box = r_image
                 sample_image_box = cv2.resize(
@@ -1700,18 +1690,6 @@ def change_pastein(image, labels, sample_labels, sample_images):
                 image[new_ymin:new_ymax, new_xmin:new_xmax] = sample_image_box
 
                 labels[ind] = new_box
-
-                # temp_crop = image[new_ymin:new_ymax, new_xmin:new_xmax]
-                # m_ind = mask > 0
-                # if m_ind.astype(np.int32).sum() > 60:
-                #     temp_crop[m_ind] = r_image[m_ind]
-                #     if len(labels):
-                #         labels = np.concatenate(
-                #             (labels, [[sample_labels[sel_ind], *box]]), 0
-                #         )
-                #     else:
-                #         labels = np.array([[sample_labels[sel_ind], *box]])
-                #     image[ymin:ymax, xmin:xmax] = temp_crop
 
     return labels
 
