@@ -149,7 +149,7 @@ def plot_images(
     if np.max(images[0]) <= 1:
         images *= 255
 
-    tl = 3  # line thickness
+    tl = 2  # line thickness
     tf = max(tl - 1, 1)  # font thickness
     bs, _, h, w = images.shape  # batch size, _, height, width
     bs = min(bs, max_subplots)  # limit plot images
@@ -195,7 +195,7 @@ def plot_images(
             for j, box in enumerate(boxes.T):
                 cls = int(classes[j])
                 color = colors[cls % len(colors)]
-                cls = names[cls] if names else cls
+                # cls = names[cls] if names else cls ################# 이름 ??? 나오는거 싫어서 주석처리 해버리기
                 if labels or conf[j] > 0.25:  # 0.25 conf thresh
                     label = "%s" % cls if labels else "%s %.1f" % (cls, conf[j])
                     plot_one_box(
