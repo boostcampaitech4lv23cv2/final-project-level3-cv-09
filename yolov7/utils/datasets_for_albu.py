@@ -762,7 +762,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     # print(len(sample_labels))
                     if len(sample_labels) == 0:
                         break
-                labels = pastein(
+                # labels = change_pastein(img, labels, sample_labels, sample_images)
+                labels = random_pastein(
                     img, labels, sample_labels, sample_images, sample_masks
                 )
 
@@ -1588,15 +1589,15 @@ class Albumentations_Before:
                 # A.ToGray(p=1),
                 # A.VerticalFlip(p=1)
                 # A.ImageCompression(quality_lower=75, p=0.01),
-                A.RandomCrop(640, 640, p=1),
+                # A.RandomCrop(640, 640, p=1),
                 A.LongestMaxSize(640, p=1),  ######### !! 필-수 !! #########
-                A.PadIfNeeded(  ######### !! 필-수 !! #########
-                    640,
-                    640,
-                    border_mode=cv2.BORDER_CONSTANT,
-                    value=(114 / 255, 114 / 255, 114 / 255),
-                    p=1,
-                ),
+                # A.PadIfNeeded(  ######### !! 필-수 !! #########
+                #     640,
+                #     640,
+                #     border_mode=cv2.BORDER_CONSTANT,
+                #     value=(114, 114, 114),
+                #     p=1,
+                # ),
             ],
             bbox_params=A.BboxParams(format="yolo", label_fields=["class_labels"]),
         )
