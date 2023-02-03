@@ -41,8 +41,9 @@ def make_check_box(tab_bbox, cls, viz, idx) -> None:
 
 
 def make_bbox(image, labels, viz, bar_columns):
-    for idx, labels in enumerate(labels):
+    h, w, c = image.shape
 
+    for idx, labels in enumerate(labels):
         labels = labels.split(" ")
         label, coordinate = labels[0], labels[1:]
         make_check_box(bar_columns, st.session_state.classes[int(label)], viz, idx)
@@ -50,10 +51,10 @@ def make_bbox(image, labels, viz, bar_columns):
         if viz[idx]:
             centerX, centerY, width, height = map(float, coordinate)
             box = [0, 0, 0, 0]
-            box[0] = (centerX - width / 2.0) * 1920
-            box[1] = (centerY - height / 2.0) * 1080
-            box[2] = (centerX + width / 2.0) * 1920
-            box[3] = (centerY + height / 2.0) * 1080
+            box[0] = (centerX - width / 2.0) * w
+            box[1] = (centerY - height / 2.0) * h
+            box[2] = (centerX + width / 2.0) * w
+            box[3] = (centerY + height / 2.0) * h
             # box[:, 2] = box[:, 0] + box[:, 2]
             # box[:, 3] = box[:, 1] + box[:, 3]
 
@@ -87,7 +88,7 @@ def make_bbox_image(index, tab_bbox, bar_columns):
 
 
 def main():
-    st.title("FindersAI")
+    st.title("FaindersAI")
     if "delete_jpg_list" not in st.session_state:
         (
             st.session_state.classes,
@@ -98,7 +99,7 @@ def main():
         st.session_state.delete_jpg_list = ""
         st.session_state.delete_txt_list = ""
 
-    idx = st.selectbox(
+    idx = st.select_slider(
         "Select Image",
         range(len(st.session_state.filenames)),
         format_func=lambda x: st.session_state.filenames[x],
@@ -108,7 +109,15 @@ def main():
 
     label_info, confirmed_label = make_bbox_image(idx, tab_bbox, st.sidebar)
 
-    col1, col2 = tab_bbox.columns(2)
+    checkbox = st.sidebar.checkbox("제대로 됐는지 확인하세요")
+    btn_clicked = st.sidebar.button(
+        "BBox Save", key="confirm_btn", disabled=(checkbox is False)
+    )
+
+    st.sidebar.text_area(
+        label="delete Image List", value=st.session_state.delete_jpg_list
+    )
+    col1, col2 = st.sidebar.columns(2)
 
     delete_btn = col1.button(label="삭제 추가", key="delete_btn")
     cancel_delete_btn = col2.button(label="삭제 취소", key="delete_btn2")
@@ -127,14 +136,6 @@ def main():
             st.session_state.delete_txt_list,
         )
 
-    checkbox = st.sidebar.checkbox("재대로 됐는지 확인하세요")
-    btn_clicked = st.sidebar.button(
-        "BBox Save", key="confirm_btn", disabled=(checkbox is False)
-    )
-
-    st.sidebar.text_area(
-        label="delete Image List", value=st.session_state.delete_jpg_list
-    )
     btn_clicked2 = st.sidebar.button(
         "Make Delete Image txt file",
         key="confirm_btn2",
