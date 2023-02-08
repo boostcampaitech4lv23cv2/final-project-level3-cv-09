@@ -50,10 +50,13 @@
 -------------------
 ## 🗃️Procedures
 <img src="asset\procedure.png">
+
 -------------------
+
 ## 1. 프로젝트 배경 및 문제 정의 
 <img src="asset\project_correlation_issue.png">
 
+<br>
 
 ## 2. 모델 선정 및 실험 설정
 
@@ -80,6 +83,7 @@
 - 무인 매장에서 활용하는 모델이므로 실시간 탐지에 적합한 **One-Stage 계열 모델** 선정
 - **Test mAP**와 **학습시간** 고려
 
+
 ### 2-3. 실험 설정
 
 - 절반의 데이터를 그룹에 대해 **Stratify**하게 샘플링
@@ -88,6 +92,8 @@
 - Epoch : 50
 - Inference 시 Confidence-Threshold = **0.25**, IoU-Threshold = **0.45**를 사용(Yolo detect default 값)
 - Train, Test Image Size = 640 x 640
+
+<br>
 
 ## 3. 실험 선정 및 결과 분석
 ### 3-1. Human Paste-In
@@ -104,7 +110,6 @@
 | :-: |
 | <img src="asset\HPI_streamlit.png"> | 
 
-<br>
 
 **실험 결과**
 
@@ -121,6 +126,7 @@ HPI[이미지수]: 추가된 Human Paste-In 데이터 수
 |Valid mAP| 0.934 | 0.932 | 0.936 |
 | sameFP | 2250 | 2207 | 1967 |
 | diffFP | 84 | 162 | 106 |
+
 
 ### 3-2. Random Paste-In
 - **개요 :** 배경 이미지에 **랜덤한 위치**에 **랜덤한 상품**을 붙여 넣는 방식
@@ -152,9 +158,12 @@ HPI[이미지수]: 추가된 Human Paste-In 데이터 수
 | sameFP | 2250 | 2149 |
 | diffFP | 84 | 98 |
 
+<br>
+
 ## 4. Conclusion
 ### 4-1. Ablation Study
-<img src="asset/Ablation_study.png" width="1000">
+<img src="asset/Ablation_study.png" width="1920">
+
 
 ### 4-2 결과
 Full Data는 그룹 별 데이터 수의 Imbalance를 방지하기 위해 Stratify하게 추출하여 활용함 
@@ -167,6 +176,7 @@ Full Data는 그룹 별 데이터 수의 Imbalance를 방지하기 위해 Strati
 |Valid mAP| 0.946 | 0.946 | 
 | sameFP | 1505 | 1032 |
 | diffFP | 19 | 175 |
+
 
 ### 4-3. 후속 개발 및 연구
 
