@@ -8,6 +8,9 @@
     <a href="https://www.notion.so/88a8362c925d47ad83fc93450e821186">
         <img src="https://img.shields.io/badge/Notion-000000?style=flat&logo=Notion&logoColor=white" height='25'>
     </a>
+    <a href="https://youtu.be/vQJTL4aTsU0">
+        <img src="https://img.shields.io/badge/YouTube-FF0000?style=flat&logo=YouTube&logoColor=white" height='25'>
+    </a>
 </div>
 
 -------------------
